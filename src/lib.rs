@@ -7,4 +7,6 @@ extern crate graphviz;
 
 pub mod code;
 pub mod graph;
+pub mod table;
+mod bits;
 mod ord;

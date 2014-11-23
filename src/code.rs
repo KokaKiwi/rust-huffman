@@ -1,7 +1,11 @@
 use ord::InvOrd;
 use std::collections::{BinaryHeap, HashMap, Bitv};
+use table::Table;
 
 pub type Weight = uint;
+
+const LEFT: bool = false;   // 0
+const RIGHT: bool = true;   // 1
 
 #[deriving(Show, PartialEq, Eq, Hash)]
 pub enum Node<T: Ord + Copy> {
@@ -15,6 +19,45 @@ impl<T: Ord + Copy> Node<T> {
             Node::Leaf(_, weight) => weight,
             Node::Branch(ref left, ref right) => left.weight() + right.weight(),
         }
+    }
+
+    pub fn table(&self) -> Table<T> {
+        let mut table = Vec::new();
+
+        fn append<T>(table: &mut Vec<(T, Bitv)>, bit: bool, value: T) {
+            table.push((value, Bitv::with_capacity(1, bit)));
+        }
+
+        fn extend<T>(table: &mut Vec<(T, Bitv)>, bit: bool, other: Vec<(T, Bitv)>) {
+            table.extend(other.into_iter().map(|(value, mut bits)| {
+                bits.push(bit);
+                (value, bits)
+            }));
+        }
+
+        match *self {
+            Node::Leaf(..) => {}
+            Node::Branch(ref left, ref right) => {
+                match **left {
+                    Node::Leaf(value, _) => {
+                        append(&mut table, LEFT, value);
+                    }
+                    ref b @ Node::Branch(..) => {
+                        extend(&mut table, LEFT, b.table());
+                    }
+                }
+                match **right {
+                    Node::Leaf(value, _) => {
+                        append(&mut table, RIGHT, value);
+                    }
+                    ref b @ Node::Branch(..) => {
+                        extend(&mut table, RIGHT, b.table());
+                    }
+                }
+            }
+        }
+
+        table
     }
 }
 
